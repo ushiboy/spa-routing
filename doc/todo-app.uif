@@ -1,11 +1,14 @@
 [Todo List]
-create new button
+Item link
 --
-click create new button
-==>Todo Form
+Click Item link
+==>Todo Detail
 
-[Todo Form]
-back list button
+[Todo Detail]
+Back link
+Delete button
 --
-click back list button
+Click Back link
+==>Todo List
+Click Delete button
 ==>Todo List
