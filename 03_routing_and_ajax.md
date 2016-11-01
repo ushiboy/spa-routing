@@ -16,7 +16,7 @@ todo-app/app.jsを編集していく。
 
 ```javascript
 /**
- * Action Type
+ * Action Types
  */
 const TODOS_FETCH = 'todos@fetch';
 ```
@@ -60,10 +60,10 @@ function todos(state = [], action) {
 ストアに追加。
 
 ```javascript
-const store = createStoreWithMiddleware(combineReducers({
+const store = createStore(combineReducers({
   route: reducer,
-  todos     // <- 追加
-}));
+  todos
+}), initState, applyMiddleware(thunk, router));
 ```
 
 ### TodoListを修正
@@ -71,12 +71,12 @@ const store = createStoreWithMiddleware(combineReducers({
 ```javascript
 class TodoList extends React.Component {
 
-  componentWillMount() {  // <- 追加
+  componentDidMount() {
     this.props.actions.fetchTodos();
   }
 
   render() {
-    const rows = this.props.todos.map(todo => {   // <- 修正
+    const rows = this.props.todos.map(todo => {
       const { id, title } = todo;
       return (
         <li key={id}>
@@ -97,7 +97,7 @@ class TodoList extends React.Component {
 
   handleLinkClick(e) {
     e.preventDefault();
-    this.props.actions.navigate(e.target.href); // <- 追加
+    this.props.actions.navigate(e.target.href);
   }
 
 }
@@ -106,7 +106,7 @@ class TodoList extends React.Component {
 ### connectする
 
 ```javascript
-const ConnectedTodoList = connect(state => {  // <- 追加
+const ConnectedTodoList = connect(state => {
   const { todos } = state;
   return { todos };
 }, dispatch => {
@@ -122,13 +122,16 @@ const ConnectedTodoList = connect(state => {  // <- 追加
 ### ルーティングの修正
 
 ```javascript
+/**
+ * Routes
+ */
 const routes = [
-  route('/', ConnectedTodoList),    // <- 修正
+  route('/', ConnectedTodoList),
   route('/todos/:id', TodoDetail)
 ];
 ```
 
-一覧に項目が表示され、クリックして詳細に行けることを確認する。
+一覧に項目が表示され、クリックして詳細に遷移することを確認する。
 
 
 ## Todo詳細の実装
@@ -172,11 +175,11 @@ function editTodo(state = {}, action) {
 ストアに追加
 
 ```javascript
-const store = createStoreWithMiddleware(combineReducers({
+const store = createStore(combineReducers({
   route: reducer,
   todos,
-  editTodo  // <- 追加
-}));
+  editTodo
+}), initState, applyMiddleware(thunk, router));
 ```
 
 ### TodoDetailの修正
@@ -184,13 +187,13 @@ const store = createStoreWithMiddleware(combineReducers({
 ```javascript
 class TodoDetail extends React.Component {
 
-  componentWillMount() {  // <- 追加
+  componentDidMount() {
     const id = Number(this.props.params.id);
     this.props.actions.fetchTodo(id);
   }
 
   render() {
-    const { title } = this.props.editTodo;  // <- 修正
+    const { title } = this.props.editTodo;
     return (
       <div>
         <h1>{title}</h1>
@@ -201,7 +204,7 @@ class TodoDetail extends React.Component {
 
   handleLinkClick(e) {
     e.preventDefault();
-    this.props.actions.navigate(e.target.href); //　<- 修正
+    this.props.actions.navigate(e.target.href);
   }
 
 }
@@ -228,26 +231,8 @@ const ConnectedTodoDetail = connect(state => {
 ```javascript
 const routes = [
   route('/', ConnectedTodoList),
-  route('/todos/:id', ConnectedTodoDetail)  // <- 修正
+  route('/todos/:id', ConnectedTodoDetail)
 ];
 ```
 
 取得したデータが描画されることを確認する。
-
-
-## お題: 削除機能の実装
-
-次のアクションを利用して詳細画面に削除機能をつけてみる。
-
-```javascript
-function removeTodo(id) {
-  return dispatch => {
-    fetch(`/api/todos/${id}`, {
-      method: 'DELETE'
-    })
-    .then(res => {
-      dispatch(navigate('/'));
-    });
-  };
-}
-```
