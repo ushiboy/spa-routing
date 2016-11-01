@@ -10,6 +10,7 @@ import isBrowser from 'is-browser';
  */
 const TODOS_FETCH = 'todos@fetch';
 const TODO_FETCH = 'todo@fetch';
+const LOAD_ENABLE = 'load@enable';
 
 /**
  * Actions
@@ -41,6 +42,32 @@ function fetchTodo(id) {
   };
 }
 
+function enableLoad() {
+  return {
+    type: LOAD_ENABLE
+  };
+}
+
+function fetchTodosIfNeeded() {
+  return (dispatch, getState) => {
+    if (getState().enableLoading) {
+      fetchTodos()(dispatch);
+    } else {
+      dispatch(enableLoad());
+    }
+  };
+}
+
+function fetchTodoIfNeeded(id) {
+  return (dispatch, getState) => {
+    if (getState().enableLoading) {
+      fetchTodo(id)(dispatch);
+    } else {
+      dispatch(enableLoad());
+    }
+  };
+}
+
 /**
  * Reducers
  */
@@ -62,6 +89,15 @@ function editTodo(state = {}, action) {
   }
 }
 
+function enableLoading(state = false, action) {
+  switch (action.type) {
+    case LOAD_ENABLE:
+      return true;
+    default:
+      return state;
+  }
+}
+
 /**
  * Containers
  */
@@ -69,7 +105,7 @@ class TodoDetail extends React.Component {
 
   componentDidMount() {
     const id = Number(this.props.params.id);
-    this.props.actions.fetchTodo(id);
+    this.props.actions.fetchTodoIfNeeded(id);
   }
 
   render() {
@@ -95,7 +131,7 @@ const ConnectedTodoDetail = connect(state => {
   return {
     actions: bindActionCreators({
       navigate,
-      fetchTodo
+      fetchTodoIfNeeded
     }, dispatch)
   };
 })(TodoDetail);
@@ -103,7 +139,7 @@ const ConnectedTodoDetail = connect(state => {
 class TodoList extends React.Component {
 
   componentDidMount() {
-    this.props.actions.fetchTodos();
+    this.props.actions.fetchTodosIfNeeded();
   }
 
   render() {
@@ -139,7 +175,7 @@ const ConnectedTodoList = connect(state => {
   return {
     actions: bindActionCreators({
       navigate,
-      fetchTodos
+      fetchTodosIfNeeded
     }, dispatch)
   };
 })(TodoList);
@@ -165,7 +201,8 @@ export default function application(initState, renderer) {
   const store = createStore(combineReducers({
     route: reducer,
     todos,
-    editTodo
+    editTodo,
+    enableLoading
   }), initState, applyMiddleware(thunk, router));
 
   const routes = [
