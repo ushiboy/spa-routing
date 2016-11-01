@@ -1,4 +1,5 @@
-const application = require('./lib/application').default;
+const application = require('./application-bundle').default;
+const ReactDOM = require('react-dom/server');
 
 module.exports = runApiServer;
 
@@ -45,6 +46,7 @@ function runApiServer(port) {
   const express = require('express')
     , bodyParser = require('body-parser')
     , app = express();
+  app.use(express.static(__dirname));
   app.use(bodyParser.json());
 
   Todo.add('Item 1');
@@ -53,6 +55,9 @@ function runApiServer(port) {
   Todo.add('Item 4');
   Todo.add('Item 5');
 
+  /**
+   * API routing
+   */
   app.get('/api/todos', (req, res) => {
     const todos = Todo.getAll();
     res.json({ todos });
@@ -84,5 +89,52 @@ function runApiServer(port) {
       res.status(404).end();
     }
   });
+
+  /**
+   * Landing page routing
+   */
+  app.get('/', (req, res) => {
+    const initState = {
+      route: {
+        href: req.path
+      },
+      todos: Todo.getAll()
+    };
+    const view = application(initState, ReactDOM.renderToString);
+    res.end(renderHtml(initState, view));
+  });
+  app.get('/todos/:id', (req, res) => {
+    const initState = {
+      route: {
+        href: req.path
+      },
+      editTodo: Todo.get(Number(req.params.id))
+    };
+    const view = application(initState, ReactDOM.renderToString);
+    res.end(renderHtml(initState, view));
+  });
   app.listen(port);
+}
+
+function renderHtml(initState, view) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo</title>
+</head>
+<body>
+  <div id="app">${view}</div>
+  <script>
+  window.__INITIAL_STATE__ = ${JSON.stringify(initState)};
+  </script>
+  <script src="/frontend-bundle.js"></script>
+</body>
+</html>`;
+}
+
+if (process.argv.length === 3) {
+  const port = Number(process.argv[2]);
+  runApiServer(port);
+  console.log(`http://localhost:${port}/`);
 }
