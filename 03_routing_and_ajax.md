@@ -9,10 +9,56 @@ $ npm start
 ```
 todo-app/app.jsを編集していく。
 
+## 初期のソースについて
+
+### 状態初期化とストアへの適用
+
+initStateとして初期状態を定義し、createStoreの引数で渡す。
+
+```javascript
+/**
+ * Initialize State
+ */
+const initState = {
+  route: {
+    href: window.location.href
+  }
+};
+
+/**
+ * Store
+ */
+const store = createStore(combineReducers({
+  route: reducer
+}), initState, applyMiddleware(thunk, router));
+
+```
+
+### ルーティングでのパラメータの扱い
+
+match結果のparamsプロパティをhandlerに渡す。
+
+```javascript
+function App(props) {
+  const { route, routes } = props;
+  const matched = match(route.href, routes);
+  if (matched) {
+    const { params } = matched;
+    return <matched.handler params={params} />
+  } else {
+    return <div>404 not found</div>
+  }
+}
+```
 
 ## Todo一覧の実装
 
+GET /api/todos からデータを取得してリスト表示する画面を作る。
+
+
 ### アクションタイプを追加
+
+一覧取得のアクションとしてTODOS_FETCHアクションタイプを定義する。
 
 ```javascript
 /**
@@ -22,6 +68,11 @@ const TODOS_FETCH = 'todos@fetch';
 ```
 
 ### アクションを追加
+
+GET /api/todosからデータ取得するアクションを作成する。
+
+取得したデータはTODOS_FETCHアクションとしてdispatchする。
+
 ```javascript
 /**
  * Actions
@@ -41,7 +92,11 @@ function fetchTodos() {
 }
 ```
 
-### リデューサーを追加
+### リデューサを追加
+
+Todo一覧データをStoreで扱えるようにtodosリデューサを定義する。
+
+TODOS_FETCHアクションが来たら受け取ったpayloadをstateとして返すようにする。
 
 ```javascript
 /**
@@ -57,7 +112,7 @@ function todos(state = [], action) {
 }
 ```
 
-ストアに追加。
+todosリデューサをStoreに追加。
 
 ```javascript
 const store = createStore(combineReducers({
@@ -66,7 +121,15 @@ const store = createStore(combineReducers({
 }), initState, applyMiddleware(thunk, router));
 ```
 
-### TodoListを修正
+### TodoListコンポーネントを実装
+
+componentDidMountメソッド（ライフサイクルメソッド）を実装する。
+コンポーネントがマウントされたら、fetchTodosアクションを実行してデータを取得するようにする。
+
+renderメソッドのrowsの初期化部分を修正してpropsのtodosを扱うようにする。
+
+handleLinkClickメソッドを実装し、クリックされたリンクのhrefでnavigateアクションを実行するようにする。
+
 
 ```javascript
 class TodoList extends React.Component {
@@ -103,7 +166,11 @@ class TodoList extends React.Component {
 }
 ```
 
-### connectする
+TodoListをconnectしてConnectedTodoListコンテナにする。
+
+mapStateToPropsとして、todosをstateから取り出してpropsとして渡すようにする。
+
+mapDispatchToPropsとして、navigateとfetchTodosを渡すようにする。
 
 ```javascript
 const ConnectedTodoList = connect(state => {
@@ -121,6 +188,8 @@ const ConnectedTodoList = connect(state => {
 
 ### ルーティングの修正
 
+"/"のルーティング対象をConnectedTodoListにする。
+
 ```javascript
 /**
  * Routes
@@ -131,18 +200,26 @@ const routes = [
 ];
 ```
 
-一覧に項目が表示され、クリックして詳細に遷移することを確認する。
+ここまでで、一覧に項目が表示され、クリックして詳細に遷移することを確認する。
 
 
 ## Todo詳細の実装
 
-### アクションタイプの追加
+GET /api/todos/:id からデータを取得して表示する画面を作る。
+
+### アクションタイプを追加
+
+単体取得のアクションとしてTODO_FETCHアクションタイプを定義する。
 
 ```javascript
 const TODO_FETCH = 'todo@fetch';
 ```
 
-### アクションの追加
+### アクションを追加
+
+GET /api/todos/:idからデータ取得するアクションを作成する。
+
+取得したデータはTODO_FETCHアクションとしてdispatchする。
 
 ```javascript
 function fetchTodo(id) {
@@ -159,7 +236,11 @@ function fetchTodo(id) {
 }
 ```
 
-### リデューサーの追加
+### リデューサを追加
+
+Todo単体データをStoreで扱えるようにeditTodoリデューサを定義する。
+
+TODO_FETCHアクションが来たら、受け取ったpayloadをstateとして返すようにする。
 
 ```javascript
 function editTodo(state = {}, action) {
@@ -172,7 +253,7 @@ function editTodo(state = {}, action) {
 }
 ```
 
-ストアに追加
+editTodoリデューサをStoreに追加。
 
 ```javascript
 const store = createStore(combineReducers({
@@ -182,7 +263,13 @@ const store = createStore(combineReducers({
 }), initState, applyMiddleware(thunk, router));
 ```
 
-### TodoDetailの修正
+### TodoDetailコンポーネントを実装
+
+componentDidMountメソッドを実装する。コンポーネントがマウントされたら、fetchTodoアクションを実行してデータを取得するようにする。
+
+renderメソッドを実装し、propsのeditTodoから受け取ったtitleを表示するようにする。
+
+handleLinkClickメソッドを実装し、Backリンクをクリックしたら"/"に戻すようにする。
 
 ```javascript
 class TodoDetail extends React.Component {
@@ -210,7 +297,11 @@ class TodoDetail extends React.Component {
 }
 ```
 
-### connectする
+TodoDetailをconnectしてConnectedTodoDetailコンテナにする。
+
+mapStateToPropsとして、editTodoをstateから取り出してpropsとして渡すようにする。
+
+mapDispatchToPropsとして、navigateとfetchTodoを渡すようにする。
 
 ```javascript
 const ConnectedTodoDetail = connect(state => {
@@ -226,7 +317,9 @@ const ConnectedTodoDetail = connect(state => {
 })(TodoDetail);
 ```
 
-### ルーティングを修正
+### ルーティングの修正
+
+"/todos/:id"のルーティング対象をConnectedTodoDetailにする。
 
 ```javascript
 const routes = [
