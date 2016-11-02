@@ -7,25 +7,23 @@ import { createMiddleware, History, match, navigate, reducer, route } from 'redu
 
 
 /**
+ * Action Types
+ */
+
+
+/**
+ * Actions
+ */
+
+
+/**
+ * Reducers
+ */
+
+
+/**
  * Containers
  */
-class TodoDetail extends React.Component {
-
-  render() {
-    return (
-      <div>
-        <h1>Item 1</h1>
-        <a href="/" onClick={this.handleLinkClick.bind(this)}>Back</a>
-      </div>
-    );
-  }
-
-  handleLinkClick(e) {
-    e.preventDefault();
-  }
-
-}
-
 class TodoList extends React.Component {
 
   render() {
@@ -57,6 +55,23 @@ class TodoList extends React.Component {
 
 }
 
+class TodoDetail extends React.Component {
+
+  render() {
+    return (
+      <div>
+        <h1>Item 1</h1>
+        <a href="/" onClick={this.handleLinkClick.bind(this)}>Back</a>
+      </div>
+    );
+  }
+
+  handleLinkClick(e) {
+    e.preventDefault();
+  }
+
+}
+
 function App(props) {
   const { route, routes } = props;
   const matched = match(route.href, routes);
@@ -72,13 +87,27 @@ const ConnectedApp = connect(state => {
   return { route };
 })(App);
 
+
+/**
+ * Initialize State
+ */
+const initState = {
+  route: {
+    href: window.location.href
+  }
+};
+
+/**
+ * Router Middleware
+ */
+const router = createMiddleware(History);
+
 /**
  * Store
  */
-const createStoreWithMiddleware = applyMiddleware(thunk, createMiddleware(History))(createStore);
-const store = createStoreWithMiddleware(combineReducers({
+const store = createStore(combineReducers({
   route: reducer
-}));
+}), initState, applyMiddleware(thunk, router));
 
 
 /**
@@ -93,7 +122,6 @@ const routes = [
 /**
  * Application start
  */
-store.dispatch(navigate(window.location.href));
 render(
   <Provider store={store}>
     <ConnectedApp routes={routes} />
